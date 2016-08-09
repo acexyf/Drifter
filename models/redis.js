@@ -1,13 +1,30 @@
 var redis=require('redis'),
-	client=redis.createClient();
+	client=redis.createClient(),
+	client1=redis.createClient(),
+	client2=redis.createClient();
 
-export.throw=function(bottle,callback){
+exports.throw=function(bottle,callback){
+
+	client1.SELECT(0,function(){
+		client1.GET(bottle.owner,function(err,result){
+			if(result>=10){
+				return callback({code:0,msg:'今天扔瓶子的机会用完了'})
+			}
+			client1.INCR(bottle.owner,function(err,ttl){
+				if(ttl===-1){
+					client1.EXPIRE(bottle.owner,86400);
+				}
+			});
+		});
+	});
+
 	bottle.time=bottle.time || Date.now();
 	//为每个漂流瓶随机生成一个id
 	var bottleId=Math.random().toString(16);
 	var type={male:0,female:1};
 	//根据漂流瓶的类型的不同将漂流瓶保存到不同的数据库
-	client.SELECT(type[bottle.type],function(){
+	var libaryid=getRandom();
+	client.SELECT(libaryid,function(){
 		//以hash类型保存漂流瓶对象
 		client.HMSET(bottleId,bottle,function(err,result){
 			if(err)
@@ -18,14 +35,27 @@ export.throw=function(bottle,callback){
 	});
 }
 
-export.pick=function(info,callback){
+exports.pick=function(info,callback){
+
+	client2.SELECT(1,function(){
+		client2.GET(info.user,function(err,result){
+			if(result>=10)
+				return callback({code:0,msg:'今天捡瓶子的机会用完了'});
+			client2.TTL(info.user,function(err,ttl){
+				if(ttl===-1)
+					client2.EXPIRE(info.user,86400);
+			});
+		});
+	});
+
 	var type={all:Math.round(Math.random()),male:0,female:1};
 	info.type=info.type || 'all';
 	//根据请求的瓶子类型的不同到不同的数据库中获取
-	client.SELECT(type[info.type],function(){
+	var libaryid=getRandom();
+	client.SELECT(libaryid,function(){
 		client.RANDOMKEY(function(err,bottleId){
 			if(!bottleId)
-				return callback({code:0,msg:'大海空空如也....'});
+				return callback({code:0,msg:'恭喜你捡到海星了'});
 			client.HGETALL(bottleId,function(err,bottle){
 				if(err)
 					return callback({code:0,msg:'漂流瓶破了...'});
@@ -34,4 +64,26 @@ export.pick=function(info,callback){
 			});
 		});
 	});
+}
+
+exports.throwBack=function(bottle,callback){
+	var bottleId=Math.random().toString(16),
+		libaryid=getRandom();;
+	client.SELECT(libaryid,function(){
+		client.HMSET(bottleId,bottle,function(err,result){
+			if(err)
+				return callback({code:0,msg:'过会再试试吧'});
+			callback({code:1,msg:result});
+			client.PEXPIRE(bottleId,bottle.time + 8640000 - Date.now());
+		});
+	});
+}
+
+
+/**
+ * 返回0-15的随机整数
+ * @return {int} [void]
+ */
+function getRandom(){
+	return Math.round(Math.random()*16);
 }

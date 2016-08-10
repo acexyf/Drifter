@@ -7,12 +7,22 @@ exports.throw=function(bottle,callback){
 
 	client1.SELECT(0,function(){
 		client1.GET(bottle.owner,function(err,result){
-			if(result>=10){
-				return callback({code:0,msg:'今天扔瓶子的机会用完了'})
+			var times=-1;
+			if(result){
+				times=parseInt(result);
+				if(result>=10){
+					return callback({code:0,msg:'今天扔瓶子的机会用完了'})
+				}
+				else{
+					times++;
+				}
 			}
-			client1.INCR(bottle.owner,function(err,ttl){
-				if(ttl===-1){
-					client1.EXPIRE(bottle.owner,86400);
+			else{
+				times=1
+			}
+			client1.SET(bottle.owner, times,function(err,result){
+				if(err){
+
 				}
 			});
 		});
@@ -36,34 +46,50 @@ exports.throw=function(bottle,callback){
 }
 
 exports.pick=function(info,callback){
-
+	var flag=false;
 	client2.SELECT(1,function(){
-		client2.GET(info.user,function(err,result){
-			if(result>=10)
-				return callback({code:0,msg:'今天捡瓶子的机会用完了'});
-			client2.TTL(info.user,function(err,ttl){
-				if(ttl===-1)
-					client2.EXPIRE(info.user,86400);
+		client2.GET('user_'+info.user,function(err,result){
+			var times=-1;
+			if(result){
+				times=parseInt(result);
+				if(result>=10){
+					flag=true;
+					return callback({code:0,msg:'今天捡瓶子的机会用完了'});
+				}
+				else{
+					times++;
+				}
+			}
+			else{
+				times=1;
+			}
+			client2.SET('user_'+info.user, times,function(err,result){
+				if(err){
+					
+				}
 			});
 		});
 	});
 
-	var type={all:Math.round(Math.random()),male:0,female:1};
-	info.type=info.type || 'all';
-	//根据请求的瓶子类型的不同到不同的数据库中获取
-	var libaryid=getRandom();
-	client.SELECT(libaryid,function(){
-		client.RANDOMKEY(function(err,bottleId){
-			if(!bottleId)
-				return callback({code:0,msg:'恭喜你捡到海星了'});
-			client.HGETALL(bottleId,function(err,bottle){
-				if(err)
-					return callback({code:0,msg:'漂流瓶破了...'});
-				callback({code:1,msg:bottle});
-				client.DEL(bottleId);
+	if(flag){
+		var type={all:Math.round(Math.random()),male:0,female:1};
+		info.type=info.type || 'all';
+		//根据请求的瓶子类型的不同到不同的数据库中获取
+		var libaryid=getRandom();
+		client.SELECT(libaryid,function(){
+			client.RANDOMKEY(function(err,bottleId){
+				flag=false;
+				if(!bottleId)
+					return callback({code:0,msg:'恭喜你捡到海星了'});
+				client.HGETALL(bottleId,function(err,bottle){
+					if(err)
+						return callback({code:0,msg:'漂流瓶破了...'});
+					callback({code:1,msg:bottle});
+					client.DEL(bottleId);
+				});
 			});
 		});
-	});
+	}
 }
 
 exports.throwBack=function(bottle,callback){

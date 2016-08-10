@@ -28,7 +28,7 @@ app.post('/',function(req,res){
  * 捡一个漂流瓶                                                         [description]
  */
 app.get('/',function(req,res){
-	console.log(req.query);
+	//console.log(req.query);
 	if(!req.query.user){
 		return res.json({code:0,msg:"信息不完整"});
 	}

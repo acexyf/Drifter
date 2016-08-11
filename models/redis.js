@@ -71,7 +71,8 @@ exports.pick=function(info,callback){
 		});
 	});
 
-	if(flag){
+	if(!flag){
+		console.log(321);
 		var type={all:Math.round(Math.random()),male:0,female:1};
 		info.type=info.type || 'all';
 		//根据请求的瓶子类型的不同到不同的数据库中获取

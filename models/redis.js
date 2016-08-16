@@ -25,7 +25,7 @@ exports.throw=function(bottle,callback){
 				if(err){
 					return callback({code:0,msg:err});
 				}
-				//client1.EXPIRE('user_'+bottle.owner,getLastTime());
+				client1.EXPIRE('user_'+bottle.owner,getLastTime());
 				//client1.end(true);
 
 				bottle.time=bottle.time || Date.now();
@@ -75,7 +75,6 @@ exports.pick=function(info,callback){
 					return callback({code:0,msg:err});
 				}
 				
-
 				var lasttime=getLastTime();
 				client2.EXPIRE('user_'+info.user,lasttime);
 				//client2.end(true);
@@ -95,7 +94,7 @@ exports.pick=function(info,callback){
 								return callback({code:0,msg:'漂流瓶破了...'});
 							callback({code:1,msg:bottle});
 							client.DEL(bottleId);
-							client.end(true);
+							//client.end(true);
 						});
 					});
 				});
@@ -132,10 +131,11 @@ function getRandom(){
  * @return {int} [void]
  */
 function getLastTime(){
-	var date=new Date(),
-	    endDate=new Date();
-	endDate.setHours(23,59,59,59);
-	var lasttime=(endDate.getTime()-date.getTime())/1000;
+	// var date=new Date(),
+	//     endDate=new Date();
+	// endDate.setHours(23,59,59,59);
+	// var lasttime=(endDate.getTime()-date.getTime())/1000;
 
-	return parseInt(lasttime);
+	// return parseInt(lasttime);
+	return 30;
 }
